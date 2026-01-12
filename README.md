@@ -2,16 +2,16 @@
 
 A modern chat application showcasing **two approaches** to AI-generated dynamic UIs:
 
-1. **Tool-Based UI** - Pre-defined components with type safety
+1. **AGUI** - Tool-Based UI with pre-defined components and type safety
 2. **A2UI (Agent-to-UI)** - Declarative specifications with unlimited flexibility
 
-Built with React (Vite), Express, and OpenAI's GPT-4.
+Built with React (Vite), Express, and OpenAI's GPT-4. Organized as a **monorepo workspace** for easy development.
 
 ![Dynamic UI Chat](https://img.shields.io/badge/React-18.2.0-blue) ![Express](https://img.shields.io/badge/Express-4.18.2-green) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange) ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue)
 
 ## ✨ Two Implementations
 
-### 📊 AGUI - Tool-Based UI (`/frontend-agui`)
+### 📊 AGUI - Tool-Based UI (`/apps/agui`)
 
 Traditional approach where the agent calls pre-defined tools:
 
@@ -22,7 +22,7 @@ Traditional approach where the agent calls pre-defined tools:
 
 **Port: 5173** | **Endpoint: `/api/agui`**
 
-### 🎨 A2UI - Declarative UI (`/frontend-a2ui`)
+### 🎨 A2UI - Declarative UI (`/apps/a2ui`)
 
 Modern approach where the agent emits UI specifications:
 
@@ -62,42 +62,29 @@ User → Agent → render_custom_ui(UISpec) → A2UIRenderer → Dynamic Compone
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- npm or yarn
+- npm (v9 or higher)
 - OpenAI API Key
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone and navigate to the repository**
 
    ```bash
-   cd dynamic-ui2
+   cd dynamic-ui
    ```
 
-2. **Install Backend Dependencies**
+2. **Install all dependencies** (installs workspace and all apps)
 
    ```bash
-   cd backend
    npm install
    ```
 
-3. **Install Frontend Dependencies (Both)**
+3. **Configure Environment Variables**
+
+   Create a `.env` file in the `apps/backend` directory:
 
    ```bash
-   # AGUI - Tool-based UI
-   cd ../frontend-agui
-   npm install
-
-   # A2UI
-   cd ../frontend-a2ui
-   npm install
-   ```
-
-4. **Configure Environment Variables**
-
-   Create a `.env` file in the `backend` directory:
-
-   ```bash
-   cd ../backend
+   cd apps/backend
    cp .env.example .env
    ```
 
@@ -110,39 +97,31 @@ User → Agent → render_custom_ui(UISpec) → A2UIRenderer → Dynamic Compone
 
 ### Running the Applications
 
-1. **Start the Backend Server** (Required for both)
+**Option 1: Run all apps simultaneously**
 
-   ```bash
-   cd backend
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
-   Backend will run on `http://localhost:3001`
+**Option 2: Run individual apps** (in separate terminals from root)
 
-   - AGUI endpoint: `/api/agui`
-   - A2UI endpoint: `/api/a2ui`
+```bash
+# Terminal 1 - Backend (Required)
+npm run dev:backend
 
-2. **Start Frontend - AGUI (Tool-Based)** (in a new terminal)
+# Terminal 2 - AGUI (Tool-Based UI)
+npm run dev:agui
 
-   ```bash
-   cd frontend
-   npm run dev
-   ```
+# Terminal 3 - A2UI (Declarative UI)
+npm run dev:a2ui
+```
 
-   Will run on `http://localhost:5173`
-
-3. **OR Start Frontend - A2UI** (in a new terminal)
-
-   ```bash
-   cd frontend-a2ui
-   npm run dev
-   ```
-
-   Will run on `http://localhost:5174`
-
-4. **Open your browser**
-   - AGUI (Tool-based): `http://localhost:5173`
-   - A2UI: `http://localhost:5174`
+**Access the apps:**
+- Backend: `http://localhost:3001`
+  - AGUI endpoint: `/api/agui`
+  - A2UI endpoint: `/api/a2ui`
+- AGUI (Tool-based): `http://localhost:5173`
+- A2UI (Declarative): `http://localhost:5174`
 
 ## 🎯 Usage Examples
 
@@ -169,49 +148,52 @@ Try asking for custom, flexible UIs:
 ## 📁 Project Structure
 
 ```
-dynamic-ui/
-├── backend/                    # Shared backend for both
-│   ├── src/
-│   │   ├── server.ts          # Express server with both endpoints
-│   │   └── types.ts           # TypeScript definitions
-│   ├── package.json
-│   └── tsconfig.json
+dynamic-ui/                     # Monorepo root
+├── package.json                # Workspace configuration
+├── apps/
+│   ├── backend/                # Shared Express backend
+│   │   ├── src/
+│   │   │   ├── server.ts       # Express server with both endpoints
+│   │   │   └── types.ts        # TypeScript definitions
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── agui/                   # AGUI - Tool-Based UI
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── ChatInterface.tsx       # Chat with tool handling
+│   │   │   │   ├── Message.tsx             # Message display
+│   │   │   │   ├── DynamicUIComponent.tsx  # UI router
+│   │   │   │   └── ui/
+│   │   │   │       ├── ChartComponent.tsx  # Charts (Recharts)
+│   │   │   │       ├── WeatherCard.tsx     # Weather display
+│   │   │   │       ├── TaskList.tsx        # Interactive tasks
+│   │   │   │       ├── CardGrid.tsx        # Card collections
+│   │   │   │       └── ProgressTracker.tsx # Progress steps
+│   │   │   ├── types.ts
+│   │   │   ├── App.tsx
+│   │   │   ├── main.tsx
+│   │   │   └── index.css
+│   │   ├── package.json
+│   │   ├── vite.config.ts
+│   │   └── tailwind.config.js
+│   │
+│   └── a2ui/                   # A2UI - Declarative UI
+│       ├── src/
+│       │   ├── components/
+│       │   │   ├── ChatInterface.tsx       # Chat with spec handling
+│       │   │   └── A2UIRenderer.tsx        # Declarative UI interpreter
+│       │   ├── types.ts
+│       │   ├── App.tsx
+│       │   ├── main.tsx
+│       │   └── index.css
+│       ├── package.json
+│       ├── vite.config.ts
+│       └── README.md
 │
-├── frontend-agui/              # AGUI - Tool-Based UI
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ChatInterface.tsx       # Chat with tool handling
-│   │   │   ├── Message.tsx             # Message display
-│   │   │   ├── DynamicUIComponent.tsx  # UI router
-│   │   │   └── ui/
-│   │   │       ├── ChartComponent.tsx  # Charts (Recharts)
-│   │   │       ├── WeatherCard.tsx     # Weather display
-│   │   │       ├── TaskList.tsx        # Interactive tasks
-│   │   │       ├── CardGrid.tsx        # Card collections
-│   │   │       └── ProgressTracker.tsx # Progress steps
-│   │   ├── types.ts
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tailwind.config.js
-│
-├── frontend-a2ui/              # A2UI - Declarative UI
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ChatInterface.tsx       # Chat with spec handling
-│   │   │   └── A2UIRenderer.tsx        # Declarative UI interpreter
-│   │   ├── types.ts
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── README.md
-│
-├── A2UI_RESEARCH_AND_IMPLEMENTATION.md
-├── AG-UI_IMPLEMENTATION_GUIDE.md
+├── A2UI_IMPLEMENTATION.md
+├── A2UI_WALKTHROUGH.md
+├── AGUI_IMPLEMENTATION.md
 └── README.md
 ```
 
@@ -273,14 +255,14 @@ _Plus: Unlimited combinations by composing primitives!_
 
 ### Adding Components to AGUI (Tool-Based)
 
-1. **Create a new component** in `frontend-agui/src/components/ui/`
-2. **Define the tool** in `backend/src/server.ts` tools array
+1. **Create a new component** in `apps/agui/src/components/ui/`
+2. **Define the tool** in `apps/backend/src/server.ts` tools array
 3. **Add the component** to `DynamicUIComponent.tsx`
 
 Example:
 
 ```typescript
-// backend/src/server.ts
+// apps/backend/src/server.ts
 {
   type: 'function',
   function: {
@@ -298,32 +280,52 @@ Example:
 
 ### Styling
 
-The app uses TailwindCSS. Modify `tailwind.config.js` to customize:
+The apps use TailwindCSS. Modify `tailwind.config.js` in each app to customize:
 
 - Colors
 - Fonts
 - Spacing
 - Animations
 
+### Workspace Scripts
+
+From the root directory:
+
+```bash
+npm run dev              # Run all apps
+npm run dev:backend      # Run backend only
+npm run dev:agui         # Run AGUI only
+npm run dev:a2ui         # Run A2UI only
+npm run build            # Build all apps
+npm run type-check       # Type check all apps
+npm run clean            # Clean all node_modules and dist folders
+```
+
 ## 🐛 Troubleshooting
 
 ### Backend won't start
 
 - Check if port 3001 is available
-- Verify your OpenAI API key is set in `.env`
-- Run `npm install` in the backend directory
+- Verify your OpenAI API key is set in `apps/backend/.env`
+- Run `npm install` from the root directory
 
 ### Frontend won't connect
 
 - Ensure backend is running on port 3001
-- Check the Vite proxy configuration in `vite.config.js`
+- Check the Vite proxy configuration in each app's `vite.config.ts`
 - Clear browser cache and restart dev server
 
 ### Components not rendering
 
 - Check browser console for errors
 - Verify tool names match between backend and frontend
-- Ensure all dependencies are installed
+- Ensure all dependencies are installed (`npm install` from root)
+
+### Workspace issues
+
+- If apps can't find dependencies, run `npm install` from root
+- For individual app issues, you can still run `npm install` in the app directory
+- Use `npm run clean` to reset and reinstall everything
 
 ## 📝 License
 

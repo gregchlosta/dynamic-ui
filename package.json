@@ -1,0 +1,26 @@
+{
+  "name": "dynamic-ui-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for Dynamic UI project - Backend and Frontend applications",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:a2ui": "npm run dev --workspace=apps/a2ui",
+    "dev:agui": "npm run dev --workspace=apps/agui",
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "build:a2ui": "npm run build --workspace=apps/a2ui",
+    "build:agui": "npm run build --workspace=apps/agui",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "clean": "rm -rf node_modules apps/*/node_modules apps/*/dist"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

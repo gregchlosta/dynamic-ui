@@ -227,7 +227,7 @@ app.post(
 
       // Call OpenAI with tools
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.2',
         messages: [
           {
             role: 'system',
@@ -266,7 +266,8 @@ app.post(
             encodeSSE({
               type: EventType.TOOL_CALL_START,
               toolCallId: toolCallId,
-              toolCallName: toolCall.function.name,
+              toolCallName:
+                'function' in toolCall ? toolCall.function.name : '',
               parentMessageId: messageId,
             })
           )
@@ -276,7 +277,7 @@ app.post(
             encodeSSE({
               type: EventType.TOOL_CALL_ARGS,
               toolCallId: toolCallId,
-              delta: toolCall.function.arguments,
+              delta: 'function' in toolCall ? toolCall.function.arguments : '',
             })
           )
 
@@ -428,7 +429,7 @@ app.post(
 
       // Call OpenAI with A2UI tool
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.2',
         messages: [
           {
             role: 'system',
@@ -563,7 +564,10 @@ Always create visually rich, colorful, and professional-looking interfaces!`,
       // Handle A2UI tool calls
       if (assistantMessage.tool_calls) {
         for (const toolCall of assistantMessage.tool_calls) {
-          if (toolCall.function.name === 'render_custom_ui') {
+          if (
+            'function' in toolCall &&
+            toolCall.function.name === 'render_custom_ui'
+          ) {
             const args = JSON.parse(toolCall.function.arguments)
             const specId = uuidv4()
 
