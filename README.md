@@ -1,43 +1,61 @@
 # 🎨 Dynamic UI Chat Application
 
-A modern chat application built with React (Vite) and Express that generates dynamic UI components in real-time using AI. When users ask for visualizations, the AI generates beautiful, interactive components directly in the chat!
+A modern chat application showcasing **two approaches** to AI-generated dynamic UIs:
 
-![Dynamic UI Chat](https://img.shields.io/badge/React-18.2.0-blue) ![Express](https://img.shields.io/badge/Express-4.18.2-green) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange)
+1. **Tool-Based UI** - Pre-defined components with type safety
+2. **A2UI (Agent-to-UI)** - Declarative specifications with unlimited flexibility
 
-## ✨ Features
+Built with React (Vite), Express, and OpenAI's GPT-4.
 
-- 💬 **Real-time Chat Interface** - Smooth, responsive chat experience
-- 🎨 **Dynamic UI Generation** - AI generates visual components on demand
-- 📊 **Multiple Component Types**:
-  - Interactive Charts (Bar, Line, Area, Pie)
-  - Weather Forecast Cards
-  - Task Lists with progress tracking
-  - Card Grids for displaying collections
-  - Progress Trackers for multi-step processes
-- 🔄 **AG-UI Protocol** - Event-driven streaming architecture
-- 🎯 **OpenAI Integration** - Powered by GPT-4
-- ⚡ **Vite** - Lightning-fast development experience
-- 🎭 **TailwindCSS** - Beautiful, modern UI design
+![Dynamic UI Chat](https://img.shields.io/badge/React-18.2.0-blue) ![Express](https://img.shields.io/badge/Express-4.18.2-green) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange) ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue)
+
+## ✨ Two Implementations
+
+### 📊 AGUI - Tool-Based UI (`/frontend-agui`)
+
+Traditional approach where the agent calls pre-defined tools:
+
+- ✅ **Type-safe** - Full TypeScript support
+- ⚡ **Fast** - Pre-built components
+- 🎯 **Controlled** - Fixed component types
+- Components: Charts, Weather Cards, Task Lists, Card Grids, Progress Trackers
+
+**Port: 5173** | **Endpoint: `/api/agui`**
+
+### 🎨 A2UI - Declarative UI (`/frontend-a2ui`)
+
+Modern approach where the agent emits UI specifications:
+
+- 🚀 **Flexible** - Create any UI component
+- 🔧 **Composable** - Build complex layouts
+- 🎭 **Creative** - Agent designs the UI
+- Components: All primitives (container, card, heading, text, button, image, list, grid, badge, alert, code, table, etc.)
+
+**Port: 5174** | **Endpoint: `/api/a2ui`**
 
 ## 🏗️ Architecture
 
-This application uses the **AG-UI (Agent-User Interaction Protocol)** to stream events from the backend to the frontend:
+Both implementations use the **AG-UI (Agent-User Interaction Protocol)** for streaming:
 
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
 │   React         │         │   AG-UI          │         │   Express       │
 │   Frontend      │◄────────┤   Events (SSE)   ├────────►│   Backend       │
-│   (Vite)        │         │                  │         │   + OpenAI      │
+│   (Tool/A2UI)   │         │                  │         │   + OpenAI      │
 └─────────────────┘         └──────────────────┘         └─────────────────┘
 ```
 
-### Event Flow
+### Tool-Based Flow
 
-1. User sends a message
-2. Backend calls OpenAI with custom tools
-3. OpenAI decides which tool to call based on user intent
-4. Backend streams AG-UI events (SSE)
-5. Frontend renders dynamic UI components
+```
+User → Agent → show_chart(data) → ChartComponent
+```
+
+### A2UI Flow
+
+```
+User → Agent → render_custom_ui(UISpec) → A2UIRenderer → Dynamic Components
+```
 
 ## 🚀 Getting Started
 
@@ -62,10 +80,15 @@ This application uses the **AG-UI (Agent-User Interaction Protocol)** to stream 
    npm install
    ```
 
-3. **Install Frontend Dependencies**
+3. **Install Frontend Dependencies (Both)**
 
    ```bash
-   cd ../frontend
+   # AGUI - Tool-based UI
+   cd ../frontend-agui
+   npm install
+
+   # A2UI
+   cd ../frontend-a2ui
    npm install
    ```
 
@@ -85,9 +108,9 @@ This application uses the **AG-UI (Agent-User Interaction Protocol)** to stream 
    PORT=3001
    ```
 
-### Running the Application
+### Running the Applications
 
-1. **Start the Backend Server**
+1. **Start the Backend Server** (Required for both)
 
    ```bash
    cd backend
@@ -96,59 +119,99 @@ This application uses the **AG-UI (Agent-User Interaction Protocol)** to stream 
 
    Backend will run on `http://localhost:3001`
 
-2. **Start the Frontend (in a new terminal)**
+   - AGUI endpoint: `/api/agui`
+   - A2UI endpoint: `/api/a2ui`
+
+2. **Start Frontend - AGUI (Tool-Based)** (in a new terminal)
 
    ```bash
    cd frontend
    npm run dev
    ```
 
-   Frontend will run on `http://localhost:5173`
+   Will run on `http://localhost:5173`
 
-3. **Open your browser**
-   Navigate to `http://localhost:5173`
+3. **OR Start Frontend - A2UI** (in a new terminal)
+
+   ```bash
+   cd frontend-a2ui
+   npm run dev
+   ```
+
+   Will run on `http://localhost:5174`
+
+4. **Open your browser**
+   - AGUI (Tool-based): `http://localhost:5173`
+   - A2UI: `http://localhost:5174`
 
 ## 🎯 Usage Examples
 
-Try asking the AI to generate different visualizations:
+### Tool-Based UI Examples
+
+Try asking the AI to generate pre-defined visualizations:
 
 - 📊 **"Show me a sales chart"** - Generates a bar/line chart
 - 🌤️ **"What's the weather in San Francisco?"** - Creates a weather card
 - ✅ **"Create a task list for my project"** - Displays an interactive task list
 - 📈 **"Display revenue growth data"** - Shows a line chart with data
 - 🎯 **"Show project progress"** - Creates a progress tracker
-- 🖼️ **"Display a card grid of products"** - Generates a grid of cards
+
+### A2UI Examples
+
+Try asking for custom, flexible UIs:
+
+- 🎨 **"Create a sales dashboard"** - Agent designs custom dashboard
+- 🛍️ **"Show me a product card for headphones"** - Custom product card
+- 📋 **"Build a pricing comparison table"** - Dynamic table
+- 📊 **"Create a project status overview"** - Custom metrics layout
+- 🎯 **"Design a feature list with badges"** - Composed UI elements
 
 ## 📁 Project Structure
 
 ```
-dynamic-ui2/
-├── backend/
+dynamic-ui/
+├── backend/                    # Shared backend for both
 │   ├── src/
-│   │   └── server.js          # Express server with AG-UI events
+│   │   ├── server.ts          # Express server with both endpoints
+│   │   └── types.ts           # TypeScript definitions
 │   ├── package.json
-│   ├── .env.example
-│   └── .env                    # Your environment variables
+│   └── tsconfig.json
 │
-├── frontend/
+├── frontend-agui/              # AGUI - Tool-Based UI
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ChatInterface.jsx       # Main chat component
-│   │   │   ├── Message.jsx             # Message display
-│   │   │   ├── DynamicUIComponent.jsx  # UI router
+│   │   │   ├── ChatInterface.tsx       # Chat with tool handling
+│   │   │   ├── Message.tsx             # Message display
+│   │   │   ├── DynamicUIComponent.tsx  # UI router
 │   │   │   └── ui/
-│   │   │       ├── ChartComponent.jsx  # Charts (Recharts)
-│   │   │       ├── WeatherCard.jsx     # Weather display
-│   │   │       ├── TaskList.jsx        # Interactive tasks
-│   │   │       ├── CardGrid.jsx        # Card collections
-│   │   │       └── ProgressTracker.jsx # Progress steps
-│   │   ├── App.jsx
-│   │   ├── main.jsx
+│   │   │       ├── ChartComponent.tsx  # Charts (Recharts)
+│   │   │       ├── WeatherCard.tsx     # Weather display
+│   │   │       ├── TaskList.tsx        # Interactive tasks
+│   │   │       ├── CardGrid.tsx        # Card collections
+│   │   │       └── ProgressTracker.tsx # Progress steps
+│   │   ├── types.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
 │   │   └── index.css
 │   ├── package.json
-│   ├── vite.config.js
+│   ├── vite.config.ts
 │   └── tailwind.config.js
 │
+├── frontend-a2ui/              # A2UI - Declarative UI
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ChatInterface.tsx       # Chat with spec handling
+│   │   │   └── A2UIRenderer.tsx        # Declarative UI interpreter
+│   │   ├── types.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── README.md
+│
+├── A2UI_RESEARCH_AND_IMPLEMENTATION.md
+├── AG-UI_IMPLEMENTATION_GUIDE.md
 └── README.md
 ```
 
@@ -157,72 +220,67 @@ dynamic-ui2/
 ### Frontend
 
 - **React 18** - UI library
+- **TypeScript 5.9** - Type safety
 - **Vite** - Build tool and dev server
 - **TailwindCSS** - Utility-first CSS framework
-- **Recharts** - Charting library
+- **Recharts** - Charting library (tool-based UI)
 
 ### Backend
 
 - **Express** - Web framework
-- **OpenAI API** - GPT-4 integration
+- **TypeScript 5.9** - Type safety
+- **OpenAI API** - GPT-4o-mini integration
 - **AG-UI Protocol** - Event streaming
 - **Server-Sent Events (SSE)** - Real-time communication
 
-## 🎨 Available Components
+## 🎨 Component Comparison
 
-### 1. Chart Component
+### Tool-Based UI Components (5 pre-defined)
 
-Displays data visualizations:
+**1. Chart Component** - Data visualizations (Bar, Line, Area, Pie)
+**2. Weather Card** - Weather with forecast
+**3. Task List** - Interactive task management
+**4. Card Grid** - Collections of cards
+**5. Progress Tracker** - Multi-step progress
 
-- Bar charts
-- Line charts
-- Area charts
-- Pie charts
+### A2UI Components (16+ primitives)
 
-### 2. Weather Card
+**Layout:** container, card, grid
+**Content:** heading, text, list, image, code, table  
+**Interactive:** button, link, progress, metric
+**UI Elements:** badge, alert, divider, spacer
 
-Shows weather information with:
+_Plus: Unlimited combinations by composing primitives!_
 
-- Current temperature and conditions
-- Humidity and wind speed
-- 3-day forecast
+## 🔍 When to Use Which?
 
-### 3. Task List
+### Use Tool-Based UI When:
 
-Interactive task management:
+- ✅ You have a fixed set of component types
+- ✅ You need type safety and autocomplete
+- ✅ Performance is critical
+- ✅ You want strict control over UI
 
-- Checkbox toggling
-- Priority levels (high, medium, low)
-- Progress tracking
+### Use A2UI When:
 
-### 4. Card Grid
-
-Display collections of items:
-
-- Image support
-- Descriptions
-- Tags
-
-### 5. Progress Tracker
-
-Multi-step process visualization:
-
-- Step status (pending, in-progress, completed)
-- Progress bar
-- Completion celebration
+- ✅ You want maximum flexibility
+- ✅ Agent should create novel UI patterns
+- ✅ You're building extensible platforms
+- ✅ UI requirements change frequently
+- ✅ You want the agent to be creative
 
 ## 🔧 Customization
 
-### Adding New UI Components
+### Adding Components to AGUI (Tool-Based)
 
-1. **Create a new component** in `frontend/src/components/ui/`
-2. **Define the tool** in `backend/src/server.js` tools array
-3. **Add the component** to `DynamicUIComponent.jsx`
+1. **Create a new component** in `frontend-agui/src/components/ui/`
+2. **Define the tool** in `backend/src/server.ts` tools array
+3. **Add the component** to `DynamicUIComponent.tsx`
 
 Example:
 
-```javascript
-// backend/src/server.js
+```typescript
+// backend/src/server.ts
 {
   type: 'function',
   function: {

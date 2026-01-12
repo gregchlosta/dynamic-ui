@@ -34,7 +34,7 @@ const ChatInterface = () => {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/agent', {
+      const response = await fetch('/api/agui', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

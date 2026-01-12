@@ -65,6 +65,23 @@ export interface ToolCallEndEvent {
   toolCallId: string
 }
 
+// A2UI Types - Declarative UI Specification
+export interface UISpecification {
+  version: '1.0'
+  component: string
+  props?: Record<string, any>
+  children?: UISpecification[]
+  layout?: 'vertical' | 'horizontal' | 'grid'
+  style?: Record<string, any>
+}
+
+export interface UISpecEvent {
+  type: 'ui.spec'
+  specId: string
+  specification: UISpecification
+  parentMessageId?: string
+}
+
 export type AGUIEvent =
   | RunStartedEvent
   | RunFinishedEvent
@@ -75,6 +92,7 @@ export type AGUIEvent =
   | ToolCallStartEvent
   | ToolCallArgsEvent
   | ToolCallEndEvent
+  | UISpecEvent
 
 // Request/Response Types
 export interface ChatMessage {
