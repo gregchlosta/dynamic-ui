@@ -1,8 +1,10 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { v4 as uuidv4 } from 'uuid'
 import OpenAI from 'openai'
+import type { ChatCompletionTool } from 'openai/resources/chat/completions'
+import { EventType, AGUIEvent, AgentRequest, ChatMessage } from './types.js'
 
 dotenv.config()
 
@@ -17,21 +19,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// AG-UI Event Types
-const EventType = {
-  RUN_STARTED: 'run.started',
-  RUN_FINISHED: 'run.finished',
-  RUN_ERROR: 'run.error',
-  TEXT_MESSAGE_START: 'text_message.start',
-  TEXT_MESSAGE_CONTENT: 'text_message.content',
-  TEXT_MESSAGE_END: 'text_message.end',
-  TOOL_CALL_START: 'tool_call.start',
-  TOOL_CALL_ARGS: 'tool_call.args',
-  TOOL_CALL_END: 'tool_call.end',
-}
-
 // Define available tools for dynamic UI generation
-const tools = [
+const tools: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
@@ -200,155 +189,166 @@ const tools = [
 ]
 
 // Encode events in SSE format
-function encodeSSE(event) {
+function encodeSSE(event: AGUIEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`
 }
 
 // Main agent endpoint
-app.post('/api/agent', async (req, res) => {
-  const { messages, threadId, runId } = req.body
+app.post(
+  '/api/agent',
+  async (req: Request<{}, {}, AgentRequest>, res: Response) => {
+    const { messages, threadId, runId } = req.body
 
-  // Set up SSE
-  res.setHeader('Content-Type', 'text/event-stream')
-  res.setHeader('Cache-Control', 'no-cache')
-  res.setHeader('Connection', 'keep-alive')
+    // Set up SSE
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
 
-  const currentThreadId = threadId || uuidv4()
-  const currentRunId = runId || uuidv4()
+    const currentThreadId = threadId || uuidv4()
+    const currentRunId = runId || uuidv4()
 
-  try {
-    // Send RUN_STARTED event
-    res.write(
-      encodeSSE({
-        type: EventType.RUN_STARTED,
-        threadId: currentThreadId,
-        runId: currentRunId,
-      })
-    )
+    try {
+      // Send RUN_STARTED event
+      res.write(
+        encodeSSE({
+          type: EventType.RUN_STARTED,
+          threadId: currentThreadId,
+          runId: currentRunId,
+        })
+      )
 
-    // Get user's last message
-    const userMessage = messages[messages.length - 1]?.content || ''
+      // Get user's last message
+      const userMessage = messages[messages.length - 1]?.content || ''
 
-    // Filter out 'tool' role messages (UI components) before sending to OpenAI
-    const openAIMessages = messages.filter((msg) => msg.role !== 'tool')
+      // Filter out 'tool' role messages (UI components) before sending to OpenAI
+      const openAIMessages = messages.filter(
+        (msg: ChatMessage) => msg.role !== 'tool'
+      ) as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 
-    // Call OpenAI with tools
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a helpful AI assistant that can generate visual UI components in response to user requests. 
+      // Call OpenAI with tools
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a helpful AI assistant that can generate visual UI components in response to user requests. 
           When users ask for things that can be visualized (charts, weather, tasks, cards, progress), call the appropriate tool to show them a beautiful UI component.
           Be creative and provide realistic data when generating these components.`,
-        },
-        ...openAIMessages,
-      ],
-      tools: tools,
-      tool_choice: 'auto',
-    })
-
-    const assistantMessage = response.choices[0].message
-    const messageId = uuidv4()
-
-    // Send TEXT_MESSAGE_START
-    res.write(
-      encodeSSE({
-        type: EventType.TEXT_MESSAGE_START,
-        messageId: messageId,
-        role: 'assistant',
+          },
+          ...openAIMessages,
+        ],
+        tools: tools,
+        tool_choice: 'auto',
       })
-    )
 
-    // If there are tool calls, handle them
-    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      for (const toolCall of assistantMessage.tool_calls) {
-        const toolCallId = uuidv4()
+      const assistantMessage = response.choices[0].message
+      const messageId = uuidv4()
 
-        // Send TOOL_CALL_START
+      // Send TEXT_MESSAGE_START
+      res.write(
+        encodeSSE({
+          type: EventType.TEXT_MESSAGE_START,
+          messageId: messageId,
+          role: 'assistant',
+        })
+      )
+
+      // If there are tool calls, handle them
+      if (
+        assistantMessage.tool_calls &&
+        assistantMessage.tool_calls.length > 0
+      ) {
+        for (const toolCall of assistantMessage.tool_calls) {
+          const toolCallId = uuidv4()
+
+          // Send TOOL_CALL_START
+          res.write(
+            encodeSSE({
+              type: EventType.TOOL_CALL_START,
+              toolCallId: toolCallId,
+              toolCallName: toolCall.function.name,
+              parentMessageId: messageId,
+            })
+          )
+
+          // Send TOOL_CALL_ARGS
+          res.write(
+            encodeSSE({
+              type: EventType.TOOL_CALL_ARGS,
+              toolCallId: toolCallId,
+              delta: toolCall.function.arguments,
+            })
+          )
+
+          // Send TOOL_CALL_END
+          res.write(
+            encodeSSE({
+              type: EventType.TOOL_CALL_END,
+              toolCallId: toolCallId,
+            })
+          )
+        }
+      }
+
+      // Send text content if any
+      if (assistantMessage.content) {
         res.write(
           encodeSSE({
-            type: EventType.TOOL_CALL_START,
-            toolCallId: toolCallId,
-            toolCallName: toolCall.function.name,
-            parentMessageId: messageId,
+            type: EventType.TEXT_MESSAGE_CONTENT,
+            messageId: messageId,
+            delta: assistantMessage.content,
           })
         )
-
-        // Send TOOL_CALL_ARGS
+      } else {
+        // Default message if only tool calls
         res.write(
           encodeSSE({
-            type: EventType.TOOL_CALL_ARGS,
-            toolCallId: toolCallId,
-            delta: toolCall.function.arguments,
-          })
-        )
-
-        // Send TOOL_CALL_END
-        res.write(
-          encodeSSE({
-            type: EventType.TOOL_CALL_END,
-            toolCallId: toolCallId,
+            type: EventType.TEXT_MESSAGE_CONTENT,
+            messageId: messageId,
+            delta: "Here's what I generated for you:",
           })
         )
       }
-    }
 
-    // Send text content if any
-    if (assistantMessage.content) {
+      // Send TEXT_MESSAGE_END
       res.write(
         encodeSSE({
-          type: EventType.TEXT_MESSAGE_CONTENT,
+          type: EventType.TEXT_MESSAGE_END,
           messageId: messageId,
-          delta: assistantMessage.content,
         })
       )
-    } else {
-      // Default message if only tool calls
+
+      // Send RUN_FINISHED
       res.write(
         encodeSSE({
-          type: EventType.TEXT_MESSAGE_CONTENT,
-          messageId: messageId,
-          delta: "Here's what I generated for you:",
+          type: EventType.RUN_FINISHED,
+          threadId: currentThreadId,
+          runId: currentRunId,
         })
       )
+
+      res.end()
+    } catch (error) {
+      console.error('Error:', error)
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
+
+      res.write(
+        encodeSSE({
+          type: EventType.RUN_ERROR,
+          message: errorMessage,
+          code: 'INTERNAL_ERROR',
+        })
+      )
+
+      res.end()
     }
-
-    // Send TEXT_MESSAGE_END
-    res.write(
-      encodeSSE({
-        type: EventType.TEXT_MESSAGE_END,
-        messageId: messageId,
-      })
-    )
-
-    // Send RUN_FINISHED
-    res.write(
-      encodeSSE({
-        type: EventType.RUN_FINISHED,
-        threadId: currentThreadId,
-        runId: currentRunId,
-      })
-    )
-
-    res.end()
-  } catch (error) {
-    console.error('Error:', error)
-
-    res.write(
-      encodeSSE({
-        type: EventType.RUN_ERROR,
-        message: error.message,
-        code: 'INTERNAL_ERROR',
-      })
-    )
-
-    res.end()
   }
-})
+)
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
 

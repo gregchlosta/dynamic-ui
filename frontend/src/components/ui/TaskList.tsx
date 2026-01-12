@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import type { ShowTaskListArgs, Task } from '../../types'
 
-const TaskList = ({ title, tasks: initialTasks }) => {
-  const [tasks, setTasks] = useState(initialTasks)
+const TaskList = ({ title, tasks: initialTasks }: ShowTaskListArgs) => {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks)
 
-  const toggleTask = (taskId) => {
+  const toggleTask = (taskId: string) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
         task.id === taskId ? { ...task, completed: !task.completed } : task
@@ -11,7 +12,7 @@ const TaskList = ({ title, tasks: initialTasks }) => {
     )
   }
 
-  const getPriorityColor = (priority) => {
+  const getPriorityColor = (priority: Task['priority']): string => {
     switch (priority) {
       case 'high':
         return 'bg-red-100 text-red-800 border-red-300'
@@ -24,7 +25,7 @@ const TaskList = ({ title, tasks: initialTasks }) => {
     }
   }
 
-  const getPriorityIcon = (priority) => {
+  const getPriorityIcon = (priority: Task['priority']): string => {
     switch (priority) {
       case 'high':
         return '🔴'

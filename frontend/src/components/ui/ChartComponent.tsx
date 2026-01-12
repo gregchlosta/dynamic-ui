@@ -15,6 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import type { ShowChartArgs } from '../../types'
 
 const COLORS = [
   '#3B82F6',
@@ -25,7 +26,7 @@ const COLORS = [
   '#EF4444',
 ]
 
-const ChartComponent = ({ title, type, data }) => {
+const ChartComponent = ({ title, type, data }: ShowChartArgs) => {
   const renderChart = () => {
     switch (type) {
       case 'bar':
@@ -90,14 +91,14 @@ const ChartComponent = ({ title, type, data }) => {
                 cx='50%'
                 cy='50%'
                 labelLine={false}
-                label={({ name, percent }) =>
+                label={({ name, percent }: { name: string; percent: number }) =>
                   `${name}: ${(percent * 100).toFixed(0)}%`
                 }
                 outerRadius={100}
                 fill='#8884d8'
                 dataKey='value'
               >
-                {data.map((entry, index) => (
+                {data.map((_entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}

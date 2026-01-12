@@ -3,19 +3,28 @@ import WeatherCard from './ui/WeatherCard'
 import TaskList from './ui/TaskList'
 import CardGrid from './ui/CardGrid'
 import ProgressTracker from './ui/ProgressTracker'
+import type { ToolArgs } from '../types'
 
-const DynamicUIComponent = ({ toolName, toolArgs }) => {
+interface DynamicUIComponentProps {
+  toolName: string
+  toolArgs: ToolArgs
+}
+
+const DynamicUIComponent = ({
+  toolName,
+  toolArgs,
+}: DynamicUIComponentProps) => {
   switch (toolName) {
     case 'show_chart':
-      return <ChartComponent {...toolArgs} />
+      return <ChartComponent {...(toolArgs as any)} />
     case 'show_weather_card':
-      return <WeatherCard {...toolArgs} />
+      return <WeatherCard {...(toolArgs as any)} />
     case 'show_task_list':
-      return <TaskList {...toolArgs} />
+      return <TaskList {...(toolArgs as any)} />
     case 'show_card_grid':
-      return <CardGrid {...toolArgs} />
+      return <CardGrid {...(toolArgs as any)} />
     case 'show_progress_tracker':
-      return <ProgressTracker {...toolArgs} />
+      return <ProgressTracker {...(toolArgs as any)} />
     default:
       return (
         <div className='p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>

@@ -1,9 +1,10 @@
-const ProgressTracker = ({ title, steps }) => {
+import type { ShowProgressTrackerArgs, Step } from '../../types'
+
+const ProgressTracker = ({ title, steps }: ShowProgressTrackerArgs) => {
   const completedCount = steps.filter((s) => s.status === 'completed').length
-  const inProgressIndex = steps.findIndex((s) => s.status === 'in-progress')
   const progressPercent = (completedCount / steps.length) * 100
 
-  const getStepIcon = (status) => {
+  const getStepIcon = (status: Step['status']): string => {
     switch (status) {
       case 'completed':
         return '✓'
@@ -15,7 +16,7 @@ const ProgressTracker = ({ title, steps }) => {
     }
   }
 
-  const getStepColor = (status) => {
+  const getStepColor = (status: Step['status']): string => {
     switch (status) {
       case 'completed':
         return 'bg-green-500 text-white'
@@ -27,7 +28,7 @@ const ProgressTracker = ({ title, steps }) => {
     }
   }
 
-  const getStepBgColor = (status) => {
+  const getStepBgColor = (status: Step['status']): string => {
     switch (status) {
       case 'completed':
         return 'bg-green-50 border-green-200'

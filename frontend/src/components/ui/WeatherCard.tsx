@@ -1,3 +1,5 @@
+import type { ShowWeatherCardArgs } from '../../types'
+
 const WeatherCard = ({
   city,
   temperature,
@@ -5,9 +7,9 @@ const WeatherCard = ({
   humidity,
   windSpeed,
   forecast,
-}) => {
-  const getWeatherIcon = (cond) => {
-    const icons = {
+}: ShowWeatherCardArgs) => {
+  const getWeatherIcon = (cond: string): string => {
+    const icons: Record<string, string> = {
       sunny: '☀️',
       cloudy: '☁️',
       rainy: '🌧️',
@@ -18,8 +20,8 @@ const WeatherCard = ({
     return icons[cond.toLowerCase()] || '🌤️'
   }
 
-  const getWeatherGradient = (cond) => {
-    const gradients = {
+  const getWeatherGradient = (cond: string): string => {
+    const gradients: Record<string, string> = {
       sunny: 'from-yellow-400 to-orange-500',
       cloudy: 'from-gray-400 to-gray-600',
       rainy: 'from-blue-400 to-blue-600',

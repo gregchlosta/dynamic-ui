@@ -1,4 +1,6 @@
-const CardGrid = ({ title, cards }) => {
+import type { ShowCardGridArgs } from '../../types'
+
+const CardGrid = ({ title, cards }: ShowCardGridArgs) => {
   return (
     <div className='bg-white rounded-2xl shadow-lg p-6 my-4 border border-gray-200'>
       <h3 className='text-2xl font-bold text-gray-800 mb-6'>{title}</h3>

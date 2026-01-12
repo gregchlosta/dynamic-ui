@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import Message from './Message'
 import DynamicUIComponent from './DynamicUIComponent'
+import type { Message as MessageType, AGUIEvent, ToolCallState } from '../types'
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const messagesEndRef = useRef(null)
+  const [messages, setMessages] = useState<MessageType[]>([])
+  const [input, setInput] = useState<string>('')
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -17,11 +18,11 @@ const ChatInterface = () => {
     scrollToBottom()
   }, [messages])
 
-  const sendMessage = async (e) => {
+  const sendMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    const userMessage = {
+    const userMessage: MessageType = {
       id: uuidv4(),
       role: 'user',
       content: input,
@@ -48,12 +49,13 @@ const ChatInterface = () => {
         }),
       })
 
-      const reader = response.body.getReader()
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No reader available')
+
       const decoder = new TextDecoder()
-      let currentMessageId = null
+      let currentMessageId: string | null = null
       let currentMessageContent = ''
-      let toolCalls = []
-      let currentToolCall = null
+      let currentToolCall: ToolCallState | null = null
 
       while (true) {
         const { done, value } = await reader.read()
@@ -65,7 +67,7 @@ const ChatInterface = () => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const eventData = JSON.parse(line.slice(6))
+              const eventData = JSON.parse(line.slice(6)) as AGUIEvent
 
               switch (eventData.type) {
                 case 'text_message.start':
@@ -87,7 +89,7 @@ const ChatInterface = () => {
                       return [
                         ...prev,
                         {
-                          id: currentMessageId,
+                          id: currentMessageId!,
                           role: 'assistant',
                           content: currentMessageContent,
                           timestamp: new Date().toISOString(),
@@ -113,12 +115,11 @@ const ChatInterface = () => {
 
                 case 'tool_call.end':
                   if (currentToolCall) {
-                    toolCalls.push(currentToolCall)
                     // Add tool call UI component
                     try {
                       const parsedArgs = JSON.parse(currentToolCall.args)
                       // Capture the tool call data before setting state
-                      const toolCallData = {
+                      const toolCallData: MessageType = {
                         id: currentToolCall.id,
                         role: 'tool',
                         toolName: currentToolCall.name,
@@ -222,8 +223,8 @@ const ChatInterface = () => {
               message.role === 'tool' ? (
                 <DynamicUIComponent
                   key={message.id}
-                  toolName={message.toolName}
-                  toolArgs={message.toolArgs}
+                  toolName={message.toolName!}
+                  toolArgs={message.toolArgs!}
                 />
               ) : (
                 <Message key={message.id} message={message} />
@@ -247,7 +248,9 @@ const ChatInterface = () => {
           <input
             type='text'
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setInput(e.target.value)
+            }
             placeholder='Ask me to visualize something...'
             className='flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
             disabled={isLoading}

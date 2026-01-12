@@ -1,4 +1,10 @@
-const Message = ({ message }) => {
+import type { Message } from '../types'
+
+interface MessageProps {
+  message: Message
+}
+
+const Message = ({ message }: MessageProps) => {
   const isUser = message.role === 'user'
   const isError = message.isError
 
