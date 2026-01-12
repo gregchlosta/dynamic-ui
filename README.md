@@ -117,6 +117,7 @@ npm run dev:a2ui
 ```
 
 **Access the apps:**
+
 - Backend: `http://localhost:3001`
   - AGUI endpoint: `/api/agui`
   - A2UI endpoint: `/api/a2ui`
