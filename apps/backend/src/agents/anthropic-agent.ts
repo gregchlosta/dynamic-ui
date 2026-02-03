@@ -107,7 +107,9 @@ export class AnthropicAgent extends AbstractAgent {
             console.log(
               'Anthropic event:',
               event.type,
-              (event as any).content_block?.type || (event as any).delta?.type || '',
+              (event as any).content_block?.type ||
+                (event as any).delta?.type ||
+                '',
             )
             if (event.type === 'content_block_start') {
               if ((event as any).content_block.type === 'text') {
