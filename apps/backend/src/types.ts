@@ -1,114 +1,41 @@
-// AG-UI Event Types
-export enum EventType {
-  RUN_STARTED = 'run.started',
-  RUN_FINISHED = 'run.finished',
-  RUN_ERROR = 'run.error',
-  TEXT_MESSAGE_START = 'text_message.start',
-  TEXT_MESSAGE_CONTENT = 'text_message.content',
-  TEXT_MESSAGE_END = 'text_message.end',
-  TOOL_CALL_START = 'tool_call.start',
-  TOOL_CALL_ARGS = 'tool_call.args',
-  TOOL_CALL_END = 'tool_call.end',
-}
+// Re-export AG-UI Protocol types from the official SDK
+export { EventType } from '@ag-ui/core'
+export type {
+  BaseEvent,
+  RunStartedEvent,
+  RunFinishedEvent,
+  RunErrorEvent,
+  TextMessageStartEvent,
+  TextMessageContentEvent,
+  TextMessageEndEvent,
+  ToolCallStartEvent,
+  ToolCallArgsEvent,
+  ToolCallEndEvent,
+  Message,
+  UserMessage,
+  AssistantMessage,
+  ToolMessage,
+  SystemMessage,
+  DeveloperMessage,
+  RunAgentInput,
+  Tool,
+  State,
+  Context,
+} from '@ag-ui/core'
 
-// AG-UI Event Interfaces
-export interface RunStartedEvent {
-  type: EventType.RUN_STARTED
-  threadId: string
-  runId: string
-}
-
-export interface RunFinishedEvent {
-  type: EventType.RUN_FINISHED
-  threadId: string
-  runId: string
-}
-
-export interface RunErrorEvent {
-  type: EventType.RUN_ERROR
-  message: string
-  code: string
-}
-
-export interface TextMessageStartEvent {
-  type: EventType.TEXT_MESSAGE_START
-  messageId: string
-  role: 'assistant' | 'user'
-}
-
-export interface TextMessageContentEvent {
-  type: EventType.TEXT_MESSAGE_CONTENT
-  messageId: string
-  delta: string
-}
-
-export interface TextMessageEndEvent {
-  type: EventType.TEXT_MESSAGE_END
-  messageId: string
-}
-
-export interface ToolCallStartEvent {
-  type: EventType.TOOL_CALL_START
-  toolCallId: string
-  toolCallName: string
-  parentMessageId: string
-}
-
-export interface ToolCallArgsEvent {
-  type: EventType.TOOL_CALL_ARGS
-  toolCallId: string
-  delta: string
-}
-
-export interface ToolCallEndEvent {
-  type: EventType.TOOL_CALL_END
-  toolCallId: string
-}
-
-// A2UI Types - Declarative UI Specification
-export interface UISpecification {
-  version: '1.0'
-  component: string
-  props?: Record<string, any>
-  children?: UISpecification[]
-  layout?: 'vertical' | 'horizontal' | 'grid'
-  style?: Record<string, any>
-}
-
-export interface UISpecEvent {
-  type: 'ui.spec'
-  specId: string
-  specification: UISpecification
-  parentMessageId?: string
-}
-
-export type AGUIEvent =
-  | RunStartedEvent
-  | RunFinishedEvent
-  | RunErrorEvent
-  | TextMessageStartEvent
-  | TextMessageContentEvent
-  | TextMessageEndEvent
-  | ToolCallStartEvent
-  | ToolCallArgsEvent
-  | ToolCallEndEvent
-  | UISpecEvent
-
-// Request/Response Types
-export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system' | 'tool'
-  content?: string
-}
-
+// Keep existing AgentRequest for backward compatibility
 export interface AgentRequest {
-  messages: ChatMessage[]
-  threadId: string
-  runId: string
+  message: string
+  conversationHistory?: ChatMessage[]
 }
 
-// Tool Definitions
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
 export interface ChartData {
-  name: string
+  label: string
   value: number
 }
 

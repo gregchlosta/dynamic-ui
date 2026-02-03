@@ -2,8 +2,18 @@ import { Response } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import OpenAI from 'openai'
 import type { ChatCompletionTool } from 'openai/resources/chat/completions'
-import { EventType, AgentRequest, ChatMessage } from '../types.js'
 import { encodeSSE } from '../utils.js'
+
+// Legacy types for A2UI handler
+interface AgentRequest {
+  message: string
+  conversationHistory?: ChatMessage[]
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
 
 // A2UI tool - agent can create ANY UI component declaratively
 const a2uiTool: ChatCompletionTool = {
@@ -148,44 +158,40 @@ Always create visually rich, colorful, and professional-looking interfaces!`
 
 export async function handleA2UIRequest(
   openai: OpenAI,
-  req: AgentRequest,
-  res: Response
+  req: any, // Use 'any' for legacy request type
+  res: Response,
 ): Promise<void> {
-  const { messages, threadId, runId } = req
+  const { message, conversationHistory = [] } = req
 
   // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
 
-  const currentThreadId = threadId || uuidv4()
-  const currentRunId = runId || uuidv4()
+  const currentThreadId = uuidv4()
+  const currentRunId = uuidv4()
 
   try {
     // Send RUN_STARTED event
     res.write(
       encodeSSE({
-        type: EventType.RUN_STARTED,
+        type: 'RUN_STARTED',
         threadId: currentThreadId,
         runId: currentRunId,
-      })
+      }),
     )
 
-    // Filter out 'tool' role messages before sending to OpenAI
-    const openAIMessages = messages.filter(
-      (msg: ChatMessage) => msg.role !== 'tool'
-    ) as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    // Build message history for OpenAI
+    const openAIMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...conversationHistory,
+      { role: 'user' as const, content: message },
+    ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 
     // Call OpenAI with A2UI tool
     const response = await openai.chat.completions.create({
-      model: 'gpt-5.2',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        ...openAIMessages,
-      ],
+      model: 'gpt-4-turbo',
+      messages: openAIMessages,
       tools: [a2uiTool],
       tool_choice: 'auto',
     })
@@ -196,29 +202,29 @@ export async function handleA2UIRequest(
     // Send TEXT_MESSAGE_START
     res.write(
       encodeSSE({
-        type: EventType.TEXT_MESSAGE_START,
+        type: 'TEXT_MESSAGE_START',
         messageId: messageId,
         role: 'assistant',
-      })
+      }),
     )
 
     // Send text content if any
     if (assistantMessage.content) {
       res.write(
         encodeSSE({
-          type: EventType.TEXT_MESSAGE_CONTENT,
+          type: 'TEXT_MESSAGE_CONTENT',
           messageId: messageId,
           delta: assistantMessage.content,
-        })
+        }),
       )
     }
 
     // Send TEXT_MESSAGE_END
     res.write(
       encodeSSE({
-        type: EventType.TEXT_MESSAGE_END,
+        type: 'TEXT_MESSAGE_END',
         messageId: messageId,
-      })
+      }),
     )
 
     // Handle A2UI tool calls
@@ -241,7 +247,7 @@ export async function handleA2UIRequest(
                 ...args.specification,
               },
               parentMessageId: messageId,
-            })
+            }),
           )
         }
       }
@@ -250,10 +256,10 @@ export async function handleA2UIRequest(
     // Send RUN_FINISHED
     res.write(
       encodeSSE({
-        type: EventType.RUN_FINISHED,
+        type: 'RUN_FINISHED',
         threadId: currentThreadId,
         runId: currentRunId,
-      })
+      }),
     )
 
     res.end()
@@ -265,10 +271,10 @@ export async function handleA2UIRequest(
 
     res.write(
       encodeSSE({
-        type: EventType.RUN_ERROR,
+        type: 'RUN_ERROR',
         message: errorMessage,
         code: 'INTERNAL_ERROR',
-      })
+      }),
     )
 
     res.end()

@@ -1,6 +1,4 @@
-import { AGUIEvent } from './types.js'
-
 // Encode events in SSE format
-export function encodeSSE(event: AGUIEvent): string {
+export function encodeSSE(event: any): string {
   return `data: ${JSON.stringify(event)}\n\n`
 }

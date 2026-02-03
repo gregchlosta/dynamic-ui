@@ -1,8 +1,15 @@
 import { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+import { HttpAgent } from '@ag-ui/client'
+import { EventType, BaseEvent } from '@ag-ui/core'
 import Message from './Message'
 import DynamicUIComponent from './DynamicUIComponent'
-import type { Message as MessageType, AGUIEvent, ToolCallState } from '../types'
+import type { Message as MessageType, ToolCallState } from '../types'
+
+// Create HttpAgent instance for AG-UI protocol
+const agent = new HttpAgent({
+  url: '/api/agui',
+})
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<MessageType[]>([])
@@ -33,150 +40,132 @@ const ChatInterface = () => {
     setInput('')
     setIsLoading(true)
 
-    try {
-      const response = await fetch('/api/agui', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          threadId: uuidv4(),
-          runId: uuidv4(),
-        }),
+    // Use AG-UI HttpAgent with Observable pattern
+    let currentMessageId: string | null = null
+    let currentMessageContent = ''
+    let currentToolCall: ToolCallState | null = null
+
+    agent
+      .run({
+        threadId: uuidv4(),
+        runId: uuidv4(),
+        messages: [...messages, userMessage].map((m) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          content: m.content || '',
+        })),
+        tools: [],
+        context: [],
+        state: {},
+        forwardedProps: {},
       })
+      .subscribe({
+        next: (event: BaseEvent) => {
+          switch (event.type) {
+            case EventType.TEXT_MESSAGE_START:
+              currentMessageId = (event as any).messageId
+              currentMessageContent = ''
+              break
 
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No reader available')
-
-      const decoder = new TextDecoder()
-      let currentMessageId: string | null = null
-      let currentMessageContent = ''
-      let currentToolCall: ToolCallState | null = null
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6)) as AGUIEvent
-
-              switch (eventData.type) {
-                case 'text_message.start':
-                  currentMessageId = eventData.messageId
-                  currentMessageContent = ''
-                  break
-
-                case 'text_message.content':
-                  currentMessageContent += eventData.delta
-                  setMessages((prev) => {
-                    const existing = prev.find((m) => m.id === currentMessageId)
-                    if (existing) {
-                      return prev.map((m) =>
-                        m.id === currentMessageId
-                          ? { ...m, content: currentMessageContent }
-                          : m
-                      )
-                    } else {
-                      return [
-                        ...prev,
-                        {
-                          id: currentMessageId!,
-                          role: 'assistant',
-                          content: currentMessageContent,
-                          timestamp: new Date().toISOString(),
-                        },
-                      ]
-                    }
-                  })
-                  break
-
-                case 'tool_call.start':
-                  currentToolCall = {
-                    id: eventData.toolCallId,
-                    name: eventData.toolCallName,
-                    args: '',
-                  }
-                  break
-
-                case 'tool_call.args':
-                  if (currentToolCall) {
-                    currentToolCall.args += eventData.delta
-                  }
-                  break
-
-                case 'tool_call.end':
-                  if (currentToolCall) {
-                    // Add tool call UI component
-                    try {
-                      const parsedArgs = JSON.parse(currentToolCall.args)
-                      // Capture the tool call data before setting state
-                      const toolCallData: MessageType = {
-                        id: currentToolCall.id,
-                        role: 'tool',
-                        toolName: currentToolCall.name,
-                        toolArgs: parsedArgs,
-                        timestamp: new Date().toISOString(),
-                      }
-                      setMessages((prev) => [...prev, toolCallData])
-                    } catch (error) {
-                      console.error(
-                        'Error parsing tool arguments:',
-                        error,
-                        currentToolCall?.args
-                      )
-                    }
-                    currentToolCall = null
-                  }
-                  break
-
-                case 'run.finished':
-                  setIsLoading(false)
-                  break
-
-                case 'run.error':
-                  console.error('Run error:', eventData)
-                  setMessages((prev) => [
+            case EventType.TEXT_MESSAGE_CONTENT:
+              currentMessageContent += (event as any).delta
+              setMessages((prev) => {
+                const existing = prev.find((m) => m.id === currentMessageId)
+                if (existing) {
+                  return prev.map((m) =>
+                    m.id === currentMessageId
+                      ? { ...m, content: currentMessageContent }
+                      : m,
+                  )
+                } else {
+                  return [
                     ...prev,
                     {
-                      id: uuidv4(),
+                      id: currentMessageId!,
                       role: 'assistant',
-                      content: `Error: ${eventData.message}`,
+                      content: currentMessageContent,
                       timestamp: new Date().toISOString(),
-                      isError: true,
                     },
-                  ])
-                  setIsLoading(false)
-                  break
+                  ]
+                }
+              })
+              break
+
+            case EventType.TOOL_CALL_START:
+              currentToolCall = {
+                id: (event as any).toolCallId,
+                name: (event as any).toolCallName,
+                args: '',
               }
-            } catch (error) {
-              console.error('Error parsing SSE event:', error, line)
-            }
+              break
+
+            case EventType.TOOL_CALL_ARGS:
+              if (currentToolCall) {
+                currentToolCall.args += (event as any).delta
+              }
+              break
+
+            case EventType.TOOL_CALL_END:
+              if (currentToolCall) {
+                try {
+                  const parsedArgs = JSON.parse(currentToolCall.args)
+                  const toolCallData: MessageType = {
+                    id: currentToolCall.id,
+                    role: 'tool',
+                    toolName: currentToolCall.name,
+                    toolArgs: parsedArgs,
+                    timestamp: new Date().toISOString(),
+                  }
+                  setMessages((prev) => [...prev, toolCallData])
+                } catch (error) {
+                  console.error(
+                    'Error parsing tool arguments:',
+                    error,
+                    currentToolCall?.args,
+                  )
+                }
+                currentToolCall = null
+              }
+              break
+
+            case EventType.RUN_FINISHED:
+              setIsLoading(false)
+              break
+
+            case EventType.RUN_ERROR:
+              console.error('Run error:', event)
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: uuidv4(),
+                  role: 'assistant',
+                  content: `Error: ${(event as any).message}`,
+                  timestamp: new Date().toISOString(),
+                  isError: true,
+                },
+              ])
+              setIsLoading(false)
+              break
           }
-        }
-      }
-    } catch (error) {
-      console.error('Error sending message:', error)
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          role: 'assistant',
-          content: 'Sorry, there was an error processing your request.',
-          timestamp: new Date().toISOString(),
-          isError: true,
         },
-      ])
-      setIsLoading(false)
-    }
+        error: (error) => {
+          console.error('Agent error:', error)
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              role: 'assistant',
+              content: 'Sorry, there was an error processing your request.',
+              timestamp: new Date().toISOString(),
+              isError: true,
+            },
+          ])
+          setIsLoading(false)
+        },
+        complete: () => {
+          console.log('Agent stream completed')
+        },
+      })
   }
 
   const suggestions = [
@@ -228,7 +217,7 @@ const ChatInterface = () => {
                 />
               ) : (
                 <Message key={message.id} message={message} />
-              )
+              ),
             )}
             {isLoading && (
               <div className='flex items-center space-x-2 text-gray-500'>
