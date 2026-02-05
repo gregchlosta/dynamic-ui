@@ -1,6 +1,6 @@
 // Re-export AG-UI Protocol types from the official SDK
-export {
-  EventType,
+export { EventType } from '@ag-ui/core'
+export type {
   BaseEvent,
   RunStartedEvent,
   RunFinishedEvent,

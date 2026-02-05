@@ -67,11 +67,3 @@ export interface Message {
   uiSpec?: UISpecification
   timestamp: string
 }
-
-export interface AgentRequest {
-  message: string
-  conversationHistory?: {
-    role: 'user' | 'assistant'
-    content: string
-  }[]
-}
