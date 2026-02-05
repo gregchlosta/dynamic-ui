@@ -79,13 +79,13 @@ export const ChatInterface: React.FC = () => {
                       currentMessageContent += (eventData as any).delta
                       setMessages((prev) => {
                         const existing = prev.find(
-                          (m) => m.id === currentMessageId
+                          (m) => m.id === currentMessageId,
                         )
                         if (existing) {
                           return prev.map((m) =>
                             m.id === currentMessageId
                               ? { ...m, content: currentMessageContent }
-                              : m
+                              : m,
                           )
                         } else {
                           return [

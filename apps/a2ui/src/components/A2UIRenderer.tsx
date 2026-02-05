@@ -75,7 +75,7 @@ const UIComponent: React.FC<{ spec: UISpecification }> = memo(({ spec }) => {
       return (
         <HeadingTag
           className={`font-bold text-gray-800 mb-4 ${getHeadingSize(
-            props.level || 2
+            props.level || 2,
           )}`}
           style={style}
         >
@@ -140,7 +140,7 @@ const UIComponent: React.FC<{ spec: UISpecification }> = memo(({ spec }) => {
       return (
         <span
           className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getBadgeColor(
-            props.color
+            props.color,
           )}`}
           style={style}
         >
