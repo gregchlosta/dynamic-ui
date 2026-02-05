@@ -120,8 +120,7 @@ User Message → Backend → Claude API (with tools) → Tool Calls → Frontend
 
 #### **Key Files**
 
-- **Backend**: [`apps/backend/src/handlers/agui.ts`](apps/backend/src/handlers/agui.ts)
-- **Tool Definitions**: [`apps/backend/src/tools/definitions.ts`](apps/backend/src/tools/definitions.ts)
+- **Backend Handler & Tool Definitions**: [`apps/backend/src/handlers/agui.ts`](apps/backend/src/handlers/agui.ts)
 - **Frontend Component Mapper**: [`apps/agui/src/components/DynamicUIComponent.tsx`](apps/agui/src/components/DynamicUIComponent.tsx)
 - **Pre-built UI Components**: [`apps/agui/src/components/ui/`](apps/agui/src/components/ui/)
 
@@ -132,7 +131,7 @@ User Message → Backend → Claude API (with tools) → Tool Calls → Frontend
 2. **Backend receives request** and forwards to Claude with tool definitions:
 
    ```typescript
-   // From tools/definitions.ts
+   // From agui.ts handler
    {
      name: 'show_chart',
      description: 'Display a chart with data visualization...',
@@ -368,7 +367,7 @@ Frontend: Receives spec → <A2UIRenderer /> interprets → Renders
 
 #### **AGUI: Adding a New Tool**
 
-1. **Define the tool** in [`apps/backend/src/tools/definitions.ts`](apps/backend/src/tools/definitions.ts):
+1. **Define the tool** in [`apps/backend/src/handlers/agui.ts`](apps/backend/src/handlers/agui.ts) (add to `AGUI_TOOLS` array):
 
    ```typescript
    {
@@ -439,7 +438,7 @@ Key backend files:
 
 #### **Add a new AGUI tool:**
 
-1. Define schema in `tools/definitions.ts`
+1. Add tool definition to `AGUI_TOOLS` array in [`handlers/agui.ts`](apps/backend/src/handlers/agui.ts)
 2. Create UI component in `agui/src/components/ui/`
 3. Map in `DynamicUIComponent.tsx`
 
