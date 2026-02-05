@@ -24,10 +24,17 @@ const port = process.env.PORT || 3001
 
 app.use(cors())
 app.use(express.json())
-// Disable response compression for SSE
+
+// Disable all buffering for SSE to work properly
 app.set('x-powered-by', false)
+app.set('etag', false)
+
+// Disable compression and buffering globally
 app.use((req, res, next) => {
   res.setHeader('X-Accel-Buffering', 'no')
+  // Disable socket timeout for SSE connections
+  req.socket.setTimeout(0)
+  res.socket?.setTimeout(0)
   next()
 })
 

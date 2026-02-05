@@ -88,7 +88,7 @@ export const AGUI_TOOLS: Tool[] = [
   {
     name: 'show_chart',
     description:
-      'Display a chart with data visualization when user asks for charts, graphs, or data visualization',
+      'Display a chart with data visualization when user asks for charts, graphs, or data visualization. IMPORTANT: If the user does not provide specific data, generate realistic sample data that demonstrates the chart functionality. Always create the component even without user data.',
     parameters: {
       type: 'object',
       properties: {
@@ -119,7 +119,8 @@ export const AGUI_TOOLS: Tool[] = [
   },
   {
     name: 'show_weather_card',
-    description: 'Display a weather forecast card when user asks about weather',
+    description:
+      'Display a weather forecast card when user asks about weather. IMPORTANT: If no specific city or weather data is provided, generate realistic sample weather data for a default city. Always create the component even without user data.',
     parameters: {
       type: 'object',
       properties: {
@@ -171,7 +172,7 @@ export const AGUI_TOOLS: Tool[] = [
   {
     name: 'show_task_list',
     description:
-      'Display an interactive task list or to-do list when user wants to track tasks',
+      'Display an interactive task list or to-do list when user wants to track tasks. IMPORTANT: If the user does not provide specific tasks, generate 3-5 realistic sample tasks that demonstrate the functionality. Always create the component even without user data.',
     parameters: {
       type: 'object',
       properties: {
@@ -202,7 +203,7 @@ export const AGUI_TOOLS: Tool[] = [
   {
     name: 'show_card_grid',
     description:
-      'Display a grid of cards for showing multiple items or options',
+      'Display a grid of cards for showing multiple items or options. IMPORTANT: If the user does not provide specific cards, generate 3-4 realistic sample cards that demonstrate the grid functionality. Always create the component even without user data.',
     parameters: {
       type: 'object',
       properties: {
@@ -236,7 +237,8 @@ export const AGUI_TOOLS: Tool[] = [
   },
   {
     name: 'show_progress_tracker',
-    description: 'Display a progress tracker showing steps in a process',
+    description:
+      'Display a progress tracker showing steps in a process. IMPORTANT: If the user does not provide specific steps, generate 4-6 realistic sample steps that demonstrate the tracker functionality. Always create the component even without user data.',
     parameters: {
       type: 'object',
       properties: {
