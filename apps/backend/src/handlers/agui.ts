@@ -3,86 +3,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { EventType, Tool } from '@ag-ui/core'
 import { encodeSSE } from '../utils.js'
 import Anthropic from '@anthropic-ai/sdk'
-import { z } from 'zod'
-
-// ============================================================================
-// Zod Schemas for Runtime Validation
-// ============================================================================
-
-const ChartToolSchema = z.object({
-  title: z.string(),
-  type: z.enum(['bar', 'line', 'area', 'pie']),
-  data: z.array(
-    z.object({
-      name: z.string(),
-      value: z.number(),
-    }),
-  ),
-})
-
-const WeatherToolSchema = z.object({
-  city: z.string(),
-  temperature: z.number(),
-  condition: z.string(),
-  humidity: z.number(),
-  windSpeed: z.number(),
-  forecast: z.array(
-    z.object({
-      day: z.string(),
-      high: z.number(),
-      low: z.number(),
-      condition: z.string(),
-    }),
-  ),
-})
-
-const TaskListToolSchema = z.object({
-  title: z.string(),
-  tasks: z.array(
-    z.object({
-      id: z.string(),
-      text: z.string(),
-      completed: z.boolean(),
-      priority: z.enum(['high', 'medium', 'low']),
-    }),
-  ),
-})
-
-const CardGridToolSchema = z.object({
-  title: z.string(),
-  cards: z.array(
-    z.object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string(),
-      status: z.enum(['active', 'pending', 'completed']),
-      metadata: z.record(z.string(), z.any()).optional(),
-    }),
-  ),
-})
-
-const ProgressToolSchema = z.object({
-  title: z.string(),
-  steps: z.array(
-    z.object({
-      id: z.string(),
-      label: z.string(),
-      status: z.enum(['completed', 'in-progress', 'pending']),
-      description: z.string().optional(),
-    }),
-  ),
-  currentStep: z.number(),
-})
-
-// ============================================================================
-// TypeScript Types (Inferred from Zod Schemas)
-// ============================================================================
-
-type ChartToolArgs = z.infer<typeof ChartToolSchema>
-type WeatherToolArgs = z.infer<typeof WeatherToolSchema>
-type TaskListToolArgs = z.infer<typeof TaskListToolSchema>
-type CardGridToolArgs = z.infer<typeof CardGridToolSchema>
-type ProgressToolArgs = z.infer<typeof ProgressToolSchema>
 
 // ============================================================================
 // AG-UI Tool Definitions
@@ -276,6 +196,14 @@ const AGUI_TOOLS: Tool[] = [
   },
 ]
 
+const systemPrompt = `You are a helpful UI assistant with access to visualization tools.
+
+When users request charts, weather info, task lists, card grids, or progress trackers, use the appropriate tool to create interactive components.
+
+IMPORTANT: If users don't provide specific data, generate realistic sample data to demonstrate the component's functionality. Always create the UI even when data isn't explicitly provided.
+
+Be conversational and helpful in your text responses while using tools to enhance the user experience.`
+
 // ============================================================================
 // Handler
 // ============================================================================
@@ -334,6 +262,7 @@ export async function handleAGUIRequest(
     const stream = getAnthropic().messages.stream({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
+      system: systemPrompt,
       messages: anthropicMessages,
       tools: AGUI_TOOLS.map((tool) => ({
         name: tool.name,

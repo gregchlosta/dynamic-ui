@@ -4,7 +4,9 @@ apps/*/node_modules/
 
 # Environment
 .env
+.env.local
 apps/*/.env
+apps/*/.env.local
 
 # Build outputs
 dist/
