@@ -17,35 +17,38 @@ export interface UISpecEvent {
 }
 
 export interface TextMessageStartEvent {
-  type: 'text.message.start'
+  type: 'TEXT_MESSAGE_START'
   messageId: string
+  role: string
 }
 
 export interface TextMessageContentEvent {
-  type: 'text.message.content'
+  type: 'TEXT_MESSAGE_CONTENT'
   messageId: string
-  content: string
+  delta: string
 }
 
 export interface TextMessageEndEvent {
-  type: 'text.message.end'
+  type: 'TEXT_MESSAGE_END'
   messageId: string
 }
 
 export interface RunStartedEvent {
-  type: 'run.started'
+  type: 'RUN_STARTED'
+  threadId: string
   runId: string
 }
 
 export interface RunFinishedEvent {
-  type: 'run.finished'
+  type: 'RUN_FINISHED'
+  threadId: string
   runId: string
 }
 
 export interface RunErrorEvent {
-  type: 'run.error'
-  runId: string
-  error: string
+  type: 'RUN_ERROR'
+  message: string
+  code: string
 }
 
 export type AGUIEvent =
@@ -67,4 +70,8 @@ export interface Message {
 
 export interface AgentRequest {
   message: string
+  conversationHistory?: {
+    role: 'user' | 'assistant'
+    content: string
+  }[]
 }

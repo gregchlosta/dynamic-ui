@@ -1,67 +1,73 @@
-import { Response } from 'express'
+import { Response, Request } from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import OpenAI from 'openai'
-import type { ChatCompletionTool } from 'openai/resources/chat/completions'
+import Anthropic from '@anthropic-ai/sdk'
 import { encodeSSE } from '../utils.js'
 
-// Legacy types for A2UI handler
-interface AgentRequest {
-  message: string
-  conversationHistory?: ChatMessage[]
+let anthropicInstance: Anthropic | null = null
+
+function getAnthropic(): Anthropic {
+  if (!anthropicInstance) {
+    anthropicInstance = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    })
+  }
+  return anthropicInstance
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system'
+interface A2UIRequest {
+  message: string
+  conversationHistory?: Message[]
+}
+
+interface Message {
+  role: 'user' | 'assistant'
   content: string
 }
 
-// A2UI tool - agent can create ANY UI component declaratively
-const a2uiTool: ChatCompletionTool = {
-  type: 'function',
-  function: {
-    name: 'render_custom_ui',
-    description:
-      'Generate a custom UI component specification for any visualization, dashboard, card, form, or interface. Use this to create dynamic, flexible UIs by specifying component hierarchy.',
-    parameters: {
-      type: 'object',
-      properties: {
-        specification: {
-          type: 'object',
-          description:
-            'Complete UI specification in A2UI format with component tree',
-          properties: {
-            component: {
-              type: 'string',
-              description:
-                'Root component type: container, card, list, grid, heading, text, button, image, badge, divider, spacer',
-            },
-            props: {
-              type: 'object',
-              description:
-                'Component properties (text, level, content, src, alt, label, color, items, columns, etc.)',
-            },
-            children: {
-              type: 'array',
-              description: 'Array of child component specifications',
-              items: {
-                type: 'object',
-              },
-            },
-            layout: {
-              type: 'string',
-              enum: ['vertical', 'horizontal', 'grid'],
-              description: 'Layout direction for container components',
-            },
-            style: {
-              type: 'object',
-              description: 'Optional CSS style properties',
+// A2UI tool for Anthropic
+const a2uiTool = {
+  name: 'render_custom_ui',
+  description:
+    'Generate a custom UI component specification for any visualization, dashboard, card, form, or interface. Use this to create dynamic, flexible UIs by specifying component hierarchy. IMPORTANT: If the user does not provide specific data, always generate realistic and diverse sample data to demonstrate the component capabilities.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      specification: {
+        type: 'object' as const,
+        description:
+          'Complete UI specification in A2UI format with component tree',
+        properties: {
+          component: {
+            type: 'string' as const,
+            description:
+              'Root component type: container, card, list, grid, heading, text, button, image, badge, divider, spacer, metric, progress, alert, link, table, code',
+          },
+          props: {
+            type: 'object' as const,
+            description:
+              'Component properties (text, level, content, src, alt, label, color, items, columns, value, etc.)',
+          },
+          children: {
+            type: 'array' as const,
+            description: 'Array of child component specifications',
+            items: {
+              type: 'object' as const,
             },
           },
-          required: ['component'],
+          layout: {
+            type: 'string' as const,
+            enum: ['vertical', 'horizontal', 'grid'],
+            description: 'Layout direction for container components',
+          },
+          style: {
+            type: 'object' as const,
+            description: 'Optional CSS style properties',
+          },
         },
+        required: ['component'],
       },
-      required: ['specification'],
     },
+    required: ['specification'],
   },
 }
 
@@ -157,16 +163,17 @@ GOOD EXAMPLE (Dashboard):
 Always create visually rich, colorful, and professional-looking interfaces!`
 
 export async function handleA2UIRequest(
-  openai: OpenAI,
-  req: any, // Use 'any' for legacy request type
+  body: A2UIRequest,
   res: Response,
+  req: Request,
 ): Promise<void> {
-  const { message, conversationHistory = [] } = req
+  const { message, conversationHistory = [] } = body
 
   // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders()
 
   const currentThreadId = uuidv4()
   const currentRunId = uuidv4()
@@ -181,72 +188,99 @@ export async function handleA2UIRequest(
       }),
     )
 
-    // Build message history for OpenAI
-    const openAIMessages = [
-      { role: 'system' as const, content: systemPrompt },
-      ...conversationHistory,
-      { role: 'user' as const, content: message },
-    ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    const anthropic = getAnthropic()
 
-    // Call OpenAI with A2UI tool
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: openAIMessages,
+    // Build message history for Anthropic
+    const messages: Anthropic.MessageParam[] = [
+      ...conversationHistory.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      { role: 'user', content: message },
+    ]
+
+    // Call Anthropic with streaming
+    const stream = await anthropic.messages.stream({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages,
       tools: [a2uiTool],
-      tool_choice: 'auto',
     })
 
-    const assistantMessage = response.choices[0].message
     const messageId = uuidv4()
+    let hasStartedMessage = false
+    let currentToolUseId: string | null = null
+    let currentToolName: string | null = null
+    let accumulatedToolInput = ''
 
-    // Send TEXT_MESSAGE_START
-    res.write(
-      encodeSSE({
-        type: 'TEXT_MESSAGE_START',
-        messageId: messageId,
-        role: 'assistant',
-      }),
-    )
-
-    // Send text content if any
-    if (assistantMessage.content) {
-      res.write(
-        encodeSSE({
-          type: 'TEXT_MESSAGE_CONTENT',
-          messageId: messageId,
-          delta: assistantMessage.content,
-        }),
-      )
-    }
-
-    // Send TEXT_MESSAGE_END
-    res.write(
-      encodeSSE({
-        type: 'TEXT_MESSAGE_END',
-        messageId: messageId,
-      }),
-    )
-
-    // Handle A2UI tool calls
-    if (assistantMessage.tool_calls) {
-      for (const toolCall of assistantMessage.tool_calls) {
-        if (
-          'function' in toolCall &&
-          toolCall.function.name === 'render_custom_ui'
-        ) {
-          const args = JSON.parse(toolCall.function.arguments)
-          const specId = uuidv4()
-
-          // Emit UI specification event
+    // Process streaming events
+    for await (const event of stream) {
+      if (event.type === 'content_block_start') {
+        if (event.content_block.type === 'text') {
+          // Start text message
+          if (!hasStartedMessage) {
+            res.write(
+              encodeSSE({
+                type: 'TEXT_MESSAGE_START',
+                messageId,
+                role: 'assistant',
+              }),
+            )
+            hasStartedMessage = true
+          }
+        } else if (event.content_block.type === 'tool_use') {
+          // Tool use started
+          currentToolUseId = event.content_block.id
+          currentToolName = event.content_block.name
+          accumulatedToolInput = ''
+        }
+      } else if (event.type === 'content_block_delta') {
+        if (event.delta.type === 'text_delta') {
+          // Stream text content
           res.write(
             encodeSSE({
-              type: 'ui.spec',
-              specId: specId,
-              specification: {
-                version: '1.0',
-                ...args.specification,
-              },
-              parentMessageId: messageId,
+              type: 'TEXT_MESSAGE_CONTENT',
+              messageId,
+              delta: event.delta.text,
+            }),
+          )
+        } else if (event.delta.type === 'input_json_delta') {
+          // Accumulate tool input
+          accumulatedToolInput += event.delta.partial_json
+        }
+      } else if (event.type === 'content_block_stop') {
+        if (currentToolUseId && currentToolName === 'render_custom_ui') {
+          // Tool use completed - emit UI specification
+          try {
+            const args = JSON.parse(accumulatedToolInput)
+            const specId = uuidv4()
+
+            res.write(
+              encodeSSE({
+                type: 'ui.spec',
+                specId,
+                specification: {
+                  version: '1.0',
+                  ...args.specification,
+                },
+                parentMessageId: messageId,
+              }),
+            )
+          } catch (e) {
+            console.error('Failed to parse tool input:', e)
+          }
+          currentToolUseId = null
+          currentToolName = null
+          accumulatedToolInput = ''
+        }
+      } else if (event.type === 'message_stop') {
+        // End text message if we started one
+        if (hasStartedMessage) {
+          res.write(
+            encodeSSE({
+              type: 'TEXT_MESSAGE_END',
+              messageId,
             }),
           )
         }

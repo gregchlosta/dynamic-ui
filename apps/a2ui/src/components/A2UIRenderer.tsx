@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import type { UISpecification } from '../types'
 
 interface A2UIRendererProps {
@@ -10,16 +10,18 @@ interface A2UIRendererProps {
  *
  * This component takes a UISpecification object and dynamically renders
  * the appropriate React components based on the specification.
+ * Memoized for performance with large UI trees.
  */
-export const A2UIRenderer: React.FC<A2UIRendererProps> = ({ spec }) => {
+export const A2UIRenderer: React.FC<A2UIRendererProps> = memo(({ spec }) => {
   return <UIComponent spec={spec} />
-}
+})
 
 /**
  * UIComponent - Recursive component renderer
  * Maps component types to actual React elements
+ * Memoized for performance optimization
  */
-const UIComponent: React.FC<{ spec: UISpecification }> = ({ spec }) => {
+const UIComponent: React.FC<{ spec: UISpecification }> = memo(({ spec }) => {
   // Validate spec
   if (!spec || typeof spec !== 'object') {
     console.warn('Invalid spec provided:', spec)
@@ -281,7 +283,7 @@ const UIComponent: React.FC<{ spec: UISpecification }> = ({ spec }) => {
         </div>
       )
   }
-}
+})
 
 // Helper functions
 

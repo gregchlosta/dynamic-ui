@@ -36,13 +36,12 @@ export const ChatInterface: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((msg) => ({
+          message: input,
+          conversationHistory: messages.map((msg) => ({
             role: msg.role,
             content:
               msg.content || (msg.uiSpec ? '[Generated UI Component]' : ''),
           })),
-          threadId: crypto.randomUUID(),
-          runId: crypto.randomUUID(),
         }),
       })
 
@@ -70,14 +69,14 @@ export const ChatInterface: React.FC = () => {
                 const eventData = JSON.parse(line.slice(6)) as AGUIEvent
 
                 switch (eventData.type) {
-                  case 'text.message.start':
-                    currentMessageId = eventData.messageId
+                  case 'TEXT_MESSAGE_START':
+                    currentMessageId = (eventData as any).messageId
                     currentMessageContent = ''
                     break
 
-                  case 'text.message.content':
-                    if (currentMessageId === eventData.messageId) {
-                      currentMessageContent += eventData.content
+                  case 'TEXT_MESSAGE_CONTENT':
+                    if (currentMessageId === (eventData as any).messageId) {
+                      currentMessageContent += (eventData as any).delta
                       setMessages((prev) => {
                         const existing = prev.find(
                           (m) => m.id === currentMessageId
@@ -103,7 +102,7 @@ export const ChatInterface: React.FC = () => {
                     }
                     break
 
-                  case 'text.message.end':
+                  case 'TEXT_MESSAGE_END':
                     currentMessageId = null
                     break
 
@@ -120,12 +119,21 @@ export const ChatInterface: React.FC = () => {
                     ])
                     break
 
-                  case 'run.finished':
+                  case 'RUN_FINISHED':
                     setIsLoading(false)
                     break
 
-                  case 'run.error':
+                  case 'RUN_ERROR':
                     console.error('Run error:', eventData)
+                    setMessages((prev) => [
+                      ...prev,
+                      {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: `❌ Error: ${(eventData as any).message || 'An error occurred'}`,
+                        timestamp: new Date().toISOString(),
+                      },
+                    ])
                     setIsLoading(false)
                     break
                 }

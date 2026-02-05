@@ -3,7 +3,6 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import OpenAI from 'openai'
 import { handleAGUIRequest } from './handlers/agui.js'
 import { handleA2UIRequest } from './handlers/a2ui.js'
 
@@ -38,19 +37,14 @@ app.use((req, res, next) => {
   next()
 })
 
-// Initialize OpenAI (still needed for a2ui endpoint)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 // AGUI Endpoint - Tool-Based UI with Pre-defined Components (using AG-UI Protocol SDK)
 app.post('/api/agui', async (req: Request, res: Response) => {
   await handleAGUIRequest(req.body, res, req)
 })
 
-// A2UI Endpoint - Declarative UI Specification approach (legacy OpenAI)
+// A2UI Endpoint - Declarative UI Specification approach (now using Anthropic Haiku)
 app.post('/api/a2ui', async (req: Request, res: Response) => {
-  await handleA2UIRequest(openai, req.body, res)
+  await handleA2UIRequest(req.body, res, req)
 })
 
 // Health check endpoint
