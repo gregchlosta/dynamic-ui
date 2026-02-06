@@ -113,12 +113,21 @@ const UIComponent: React.FC<{ spec: UISpecification }> = memo(({ spec }) => {
     case 'list':
       return (
         <ul className='space-y-2' style={style}>
-          {(props.items || []).map((item: string, idx: number) => (
-            <li key={idx} className='flex items-start gap-3'>
-              <span className='text-blue-500 font-bold mt-1'>•</span>
-              <span className='text-gray-700'>{item}</span>
-            </li>
-          ))}
+          {(props.items || []).map(
+            (item: string | { text: string; icon?: string }, idx: number) => {
+              // Handle both string items and object items with {text, icon}
+              const text = typeof item === 'string' ? item : item.text
+              const icon =
+                typeof item === 'object' && item.icon ? item.icon : '•'
+
+              return (
+                <li key={idx} className='flex items-start gap-3'>
+                  <span className='text-blue-500 font-bold mt-1'>{icon}</span>
+                  <span className='text-gray-700'>{text}</span>
+                </li>
+              )
+            },
+          )}
         </ul>
       )
 
